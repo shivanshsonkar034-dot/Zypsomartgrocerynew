@@ -1,0 +1,430 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ZYPSO Mart - Online Grocery Delivery</title>
+    
+    <!-- PWA Meta -->
+    <meta name="theme-color" content="#22c55e">
+    <meta name="description" content="Fast grocery delivery with location-based pricing">
+    <link rel="manifest" href="/manifest.json">
+    <link rel="icon" href="logo.png">
+    
+    <!-- Styles -->
+    <link rel="stylesheet" href="style.css">
+    
+    <!-- Fonts & Icons -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+
+<body>
+    <!-- Shop Closed Overlay -->
+    <div id="shop-closed-overlay" class="shop-closed-overlay">
+        <div class="closed-content">
+            <div class="closed-icon">
+                <i class="fas fa-store-slash"></i>
+            </div>
+            <h2>Store Closed</h2>
+            <p id="opening-time-text">We'll be back soon!</p>
+            <div class="closed-info">
+                <p><i class="fas fa-clock"></i> <span id="next-opening">Opening time will be shown here</span></p>
+                <p><i class="fas fa-phone"></i> Call us: <span id="support-display">8090315246</span></p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Header -->
+    <header class="app-header">
+        <div class="container">
+            <!-- Logo + App Name -->
+            <div class="logo-row">
+                <div class="logo-section">
+                    <img src="logo.png" alt="ZYPSO Mart Logo" id="app-logo">
+                    <div class="logo-text">
+                        <span class="app-name">ZYPSO Mart</span>
+                        <small class="app-tagline">Fresh Groceries Delivered</small>
+                    </div>
+                </div>
+
+                <div class="header-actions">
+                    <button id="location-btn" class="icon-btn" title="Update Location">
+                        <i class="fas fa-location-dot"></i>
+                        <span id="location-badge" class="notification-badge" style="display:none">!</span>
+                    </button>
+                    <a id="support-link" href="tel:8090315246" class="icon-btn" title="Call Support">
+                        <i class="fas fa-phone"></i>
+                    </a>
+                    <button id="my-orders-btn" class="icon-btn" title="My Orders" style="display:none;">
+                        <i class="fas fa-box"></i>
+                    </button>
+                    <button id="auth-btn" class="icon-btn" title="Account">
+                        <i class="fas fa-user"></i>
+                    </button>
+                    <button id="cart-btn" class="icon-btn" title="Cart">
+                        <i class="fas fa-shopping-cart"></i>
+                        <span id="cart-count" class="notification-badge">0</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Search -->
+            <div class="search-container">
+                <i class="fas fa-search search-icon"></i>
+                <input type="text" id="product-search" placeholder="Search for groceries, fruits, vegetables...">
+                <button id="voice-search" class="voice-btn" title="Voice Search">
+                    <i class="fas fa-microphone"></i>
+                </button>
+            </div>
+
+            <!-- Categories -->
+            <div class="categories-header">
+                <h4>Categories</h4>
+                <button id="view-all-categories" class="btn-text">View All</button>
+            </div>
+            <div id="category-list" class="category-scroll"></div>
+        </div>
+    </header>
+
+    <!-- Delivery Banner -->
+    <div class="delivery-banner">
+        <div class="container">
+            <div class="banner-content">
+                <i class="fas fa-shipping-fast"></i>
+                <span>Free delivery on orders above ₹500 |</span>
+                <span id="location-display"><i class="fas fa-map-marker-alt"></i> Updating location...</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <main class="container">
+        <!-- Featured Products -->
+        <div class="section-header">
+            <h3><i class="fas fa-star featured-icon"></i> Featured Products</h3>
+            <div class="stock-status">
+                <span class="stock-indicator active"></span>
+                <span>In Stock</span>
+            </div>
+        </div>
+        
+        <div id="product-grid" class="product-grid"></div>
+        
+        <!-- Loading Indicator -->
+        <div id="loading-indicator" class="loading-container">
+            <div class="loading-spinner"></div>
+            <p>Loading fresh products...</p>
+        </div>
+    </main>
+
+    <!-- Admin PIN Modal -->
+    <div id="admin-pin-modal" class="modal">
+        <div class="modal-content">
+            <h3><i class="fas fa-lock"></i> Admin Access</h3>
+            <p class="modal-subtitle">Enter PIN to access admin dashboard</p>
+            <input type="password" id="admin-pin-input" placeholder="Enter 4-digit PIN" maxlength="4" class="capsule-input">
+            <button onclick="checkAdminPin()" class="btn-primary">
+                <i class="fas fa-sign-in-alt"></i> Verify & Enter
+            </button>
+            <button onclick="closeAdminPin()" class="close-btn">&times;</button>
+        </div>
+    </div>
+
+    <!-- Location Modal -->
+    <div id="location-modal" class="modal">
+        <div class="modal-content">
+            <h3><i class="fas fa-map-marker-alt"></i> Delivery Location</h3>
+            <p class="modal-subtitle">Set your location for accurate delivery charges</p>
+            
+            <div class="map-preview">
+                <div class="map-overlay">
+                    <i class="fas fa-map fa-2x"></i>
+                    <p>Map Preview</p>
+                </div>
+            </div>
+            
+            <div class="location-options">
+                <button onclick="getCurrentLocation()" class="location-btn">
+                    <i class="fas fa-crosshairs"></i> Use Current Location
+                </button>
+                <div class="or-divider">
+                    <span>OR</span>
+                </div>
+                <input type="text" id="manual-location" placeholder="Enter your address manually" class="capsule-input">
+                <button onclick="useManualLocation()" class="btn-secondary">
+                    <i class="fas fa-check"></i> Use This Address
+                </button>
+            </div>
+            
+            <div class="location-info">
+                <p><i class="fas fa-info-circle"></i> Delivery charges vary based on distance from our store</p>
+            </div>
+            
+            <button onclick="closeLocationModal()" class="close-btn">&times;</button>
+        </div>
+    </div>
+
+    <!-- Cart Sidebar -->
+    <div id="sidebar-overlay" class="sidebar-overlay">
+        <div class="cart-container">
+            <div class="cart-header">
+                <h2><i class="fas fa-shopping-cart"></i> Your Cart</h2>
+                <button id="close-cart" class="close-btn">&times;</button>
+            </div>
+
+            <!-- Location Section in Cart -->
+            <div class="location-section">
+                <div class="location-header">
+                    <i class="fas fa-truck"></i>
+                    <div>
+                        <h4>Delivery to</h4>
+                        <p id="current-address">Set your location to calculate delivery charges</p>
+                    </div>
+                    <button onclick="openLocationModal()" class="btn-text">
+                        <i class="fas fa-edit"></i> Change
+                    </button>
+                </div>
+                <div id="distance-display" class="distance-info">
+                    <span>Distance: <b id="distance-value">--</b> km</span>
+                    <span>ETA: <b id="eta-value">--</b> mins</span>
+                </div>
+            </div>
+
+            <!-- Cart Items -->
+            <div id="cart-items" class="cart-items-container">
+                <!-- Cart items will be populated here -->
+            </div>
+
+            <!-- Delivery Details -->
+            <div class="delivery-details" id="delivery-details">
+                <h4><i class="fas fa-user-circle"></i> Delivery Details</h4>
+                <input type="text" id="cust-name" placeholder="Full Name" class="capsule-input">
+                <input type="tel" id="cust-phone" placeholder="Phone Number" class="capsule-input">
+                <textarea id="cust-address" placeholder="Delivery Address" class="capsule-input" rows="3"></textarea>
+                
+                <!-- Special Instructions -->
+                <div class="special-instructions">
+                    <label for="instructions"><i class="fas fa-sticky-note"></i> Special Instructions</label>
+                    <textarea id="instructions" placeholder="e.g., Leave at door, call before delivery..." class="capsule-input" rows="2"></textarea>
+                </div>
+            </div>
+
+            <!-- Delivery Charges Breakdown -->
+            <div id="delivery-breakdown" class="delivery-breakdown" style="display:none;">
+                <h4><i class="fas fa-receipt"></i> Order Summary</h4>
+                <div class="breakdown-item">
+                    <span>Items Total</span>
+                    <span id="items-total">₹0</span>
+                </div>
+                <div class="breakdown-item">
+                    <span>Delivery Charge</span>
+                    <span id="delivery-charge">₹0</span>
+                </div>
+                <div class="breakdown-item">
+                    <span>Packing Charge</span>
+                    <span id="packing-charge">₹10</span>
+                </div>
+                <div class="breakdown-item discount">
+                    <span>Discount</span>
+                    <span id="discount-value">-₹0</span>
+                </div>
+                <div class="breakdown-item total">
+                    <span>Grand Total</span>
+                    <span id="cart-total">₹0</span>
+                </div>
+            </div>
+
+            <!-- Cart Summary -->
+            <div class="cart-summary">
+                <div class="total-section">
+                    <div>
+                        <p class="total-label">Total Amount</p>
+                        <p class="total-amount" id="cart-total-display">₹0</p>
+                    </div>
+                    <div class="savings">
+                        <i class="fas fa-tag"></i>
+                        <span>You save ₹<span id="total-savings">0</span></span>
+                    </div>
+                </div>
+                
+                <button id="checkout-btn" class="btn-primary checkout-btn">
+                    <i class="fas fa-shopping-bag"></i>
+                    <span>Proceed to Checkout</span>
+                    <span class="checkout-arrow">→</span>
+                </button>
+                
+                <p class="secure-checkout">
+                    <i class="fas fa-lock"></i> Secure checkout • 100% Safe
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Orders Modal -->
+    <div id="orders-modal" class="modal">
+        <div class="modal-content" style="max-width:500px;">
+            <div class="modal-header">
+                <h3><i class="fas fa-history"></i> Order History</h3>
+                <button id="close-orders" class="close-btn">&times;</button>
+            </div>
+            <div class="orders-tabs">
+                <button class="tab-btn active" onclick="filterOrders('all')">All Orders</button>
+                <button class="tab-btn" onclick="filterOrders('pending')">Pending</button>
+                <button class="tab-btn" onclick="filterOrders('delivered')">Delivered</button>
+            </div>
+            <div id="user-orders-list" class="orders-list"></div>
+        </div>
+    </div>
+
+    <!-- Auth Modal -->
+    <div id="auth-modal" class="modal">
+        <div class="modal-content">
+            <h3 id="modal-title"><i class="fas fa-user-circle"></i> Welcome Back!</h3>
+            <p class="modal-subtitle" id="modal-subtitle">Login to your account to continue</p>
+            
+            <form id="auth-form">
+                <div class="input-group">
+                    <i class="fas fa-envelope"></i>
+                    <input type="email" id="auth-email" placeholder="Email address" required class="capsule-input">
+                </div>
+                <div class="input-group">
+                    <i class="fas fa-lock"></i>
+                    <input type="password" id="auth-password" placeholder="Password" required class="capsule-input">
+                    <button type="button" id="show-password" class="show-password-btn">
+                        <i class="fas fa-eye"></i>
+                    </button>
+                </div>
+                
+                <div class="form-options">
+                    <label class="checkbox">
+                        <input type="checkbox" id="remember-me">
+                        <span>Remember me</span>
+                    </label>
+                    <a href="#" class="forgot-password">Forgot Password?</a>
+                </div>
+                
+                <button type="submit" id="auth-submit" class="btn-primary">
+                    <span id="submit-text">Continue</span>
+                    <i class="fas fa-arrow-right"></i>
+                </button>
+
+                <div class="auth-footer">
+                    <p id="switch-mode">New here? <span class="auth-link">Create an account</span></p>
+                    <p onclick="openAdminPin()" class="admin-link">
+                        <i class="fas fa-tools"></i> Admin Panel
+                    </p>
+                </div>
+            </form>
+            <button id="close-modal" class="close-btn">&times;</button>
+        </div>
+    </div>
+
+    <!-- Toast Notification -->
+    <div id="toast" class="toast"></div>
+
+    <!-- Main App Script -->
+    <script type="module" src="app.js"></script>
+
+    <!-- Admin Helpers -->
+    <script>
+        window.openAdminPin = () => {
+            document.getElementById('auth-modal').classList.remove('active');
+            document.getElementById('admin-pin-modal').classList.add('active');
+            document.getElementById('admin-pin-input').focus();
+        };
+        
+        window.closeAdminPin = () => {
+            document.getElementById('admin-pin-modal').classList.remove('active');
+            document.getElementById('admin-pin-input').value = '';
+        };
+        
+        window.checkAdminPin = () => {
+            const pin = document.getElementById('admin-pin-input').value;
+            if (pin === "0000") {
+                window.location.href = "admin.html";
+            } else {
+                showToast("Incorrect Admin PIN", "error");
+                document.getElementById('admin-pin-input').value = '';
+                document.getElementById('admin-pin-input').focus();
+            }
+        };
+        
+        // Toast Function
+        function showToast(message, type = 'success') {
+            const toast = document.getElementById('toast');
+            toast.textContent = message;
+            toast.className = 'toast show ' + type;
+            
+            setTimeout(() => {
+                toast.className = toast.className.replace('show', '');
+            }, 3000);
+        }
+        
+        // Location Modal Functions
+        window.openLocationModal = () => {
+            document.getElementById('location-modal').classList.add('active');
+        };
+        
+        window.closeLocationModal = () => {
+            document.getElementById('location-modal').classList.remove('active');
+        };
+        
+        window.getCurrentLocation = () => {
+            if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition(
+                    (position) => {
+                        showToast("Location updated successfully!", "success");
+                        closeLocationModal();
+                        // This will be handled in app.js
+                        if (window.updateUserLocation) {
+                            window.updateUserLocation(position.coords.latitude, position.coords.longitude);
+                        }
+                    },
+                    (error) => {
+                        showToast("Unable to get location. Please enter manually.", "error");
+                    }
+                );
+            } else {
+                showToast("Geolocation is not supported by your browser", "error");
+            }
+        };
+        
+        window.useManualLocation = () => {
+            const address = document.getElementById('manual-location').value;
+            if (address.trim()) {
+                showToast("Location updated successfully!", "success");
+                closeLocationModal();
+                // This will be handled in app.js
+                if (window.updateManualLocation) {
+                    window.updateManualLocation(address);
+                }
+            } else {
+                showToast("Please enter an address", "error");
+            }
+        };
+    </script>
+
+    <!-- Service Worker Registration -->
+    <script>
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('/sw.js')
+                    .then(reg => {
+                        console.log('Service Worker registered:', reg);
+                        reg.update();
+                    })
+                    .catch(err => console.log('Service Worker registration failed:', err));
+            });
+        }
+        
+        // Install PWA Prompt
+        let deferredPrompt;
+        window.addEventListener('beforeinstallprompt', (e) => {
+            e.preventDefault();
+            deferredPrompt = e;
+            showToast("Install ZYPSO Mart for better experience!", "info");
+        });
+    </script>
+</body>
+</html>
